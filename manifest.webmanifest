@@ -1,0 +1,9 @@
+{
+  "name": "Moelfre 330 Stop Route",
+  "short_name": "Moelfre Route",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "description": "Live GPS route tracker for the 330-stop Moelfre route."
+}
