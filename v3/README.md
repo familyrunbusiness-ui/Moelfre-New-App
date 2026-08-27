@@ -30,3 +30,14 @@ then v3 should be:
 `https://USERNAME.github.io/REPOSITORY/v3/`
 
 The dashboard selections and delivered progress are stored in that browser/device using local storage.
+
+## v3.1 visual update
+The selected **Letters** button now uses a stronger dark-blue background with white text so it is easier to see at a glance on a phone. No workflow, route, GPS, parcel, or delivery behaviour has been changed.
+
+## v3.2 parcel counter
+- Each tap on **Parcel** adds one parcel.
+- The button displays the parcel quantity, e.g. `Parcel × 3`.
+- **Remove one parcel** appears whenever the count is above zero.
+- The dashboard summary shows total parcels.
+- Delivery mode and today's selected list show parcel quantities.
+- Existing v3.1 parcel selections migrate automatically to a count of 1.

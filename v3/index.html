@@ -43,8 +43,8 @@ h1{font-size:1.35rem;margin:0 0 5px}
 .gps{font-size:.74rem;color:var(--muted);white-space:nowrap}
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .toggle{min-height:46px;border:1px solid #cbd0d6;background:#fff;border-radius:11px;font-weight:700;cursor:pointer}
-.toggle.on.letters{background:var(--letters);border-color:#8da8e8}
-.toggle.on.parcel{background:var(--parcel);border-color:#dfa75d}
+.toggle.on.letters{background:#3569c8;border-color:#2453a6;color:#fff;box-shadow:inset 0 0 0 1px #2453a6}
+.toggle.on.parcel{background:var(--parcel);border-color:#dfa75d}.small-remove{margin-top:7px;width:100%;font-size:.8rem;padding:8px;min-height:38px}
 .route-screen{display:none}
 .route-screen.active{display:block}
 .dashboard.hidden{display:none}
@@ -87,7 +87,7 @@ h1{font-size:1.35rem;margin:0 0 5px}
 <div class="summary">
   <div class="stat"><strong id="selCount">0</strong><span>houses selected</span></div>
   <div class="stat"><strong id="letterCount">0</strong><span>with letters</span></div>
-  <div class="stat"><strong id="parcelCount">0</strong><span>with parcels</span></div>
+  <div class="stat"><strong id="parcelCount">0</strong><span>parcels total</span></div>
   <div class="stat"><strong id="gpsCount">0</strong><span>GPS verified</span></div>
 </div>
 </header>
@@ -151,6 +151,12 @@ try{state=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){state={}}
 state.pick=state.pick||{};
 state.delivered=state.delivered||{};
 state.routeIndex=Number.isInteger(state.routeIndex)?state.routeIndex:0;
+Object.keys(state.pick).forEach(k=>{
+  const p=state.pick[k]||{};
+  if(p.parcel===true && !p.parcels)p.parcels=1;
+  if(p.parcel!==undefined)delete p.parcel;
+  if(p.parcels===undefined)p.parcels=0;
+});
 let selectedOnly=false;
 
 const $=id=>document.getElementById(id);
@@ -159,20 +165,35 @@ function effective(s){
   if(s.hasVerified)return {lat:s.verifiedLat,lon:s.verifiedLon,verified:true};
   return {lat:s.initialLat,lon:s.initialLon,verified:false};
 }
-function chosen(s){const p=state.pick[s.stop]||{};return !!(p.letters||p.parcel)}
+function chosen(s){const p=state.pick[s.stop]||{};return !!(p.letters||(p.parcels||0)>0)}
 function today(){return STOPS.filter(chosen)}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
 function updateCounts(){
   const t=today();
   $("selCount").textContent=t.length;
   $("letterCount").textContent=t.filter(s=>(state.pick[s.stop]||{}).letters).length;
-  $("parcelCount").textContent=t.filter(s=>(state.pick[s.stop]||{}).parcel).length;
+  $("parcelCount").textContent=t.reduce((sum,s)=>sum+((state.pick[s.stop]||{}).parcels||0),0);
   $("gpsCount").textContent=t.filter(s=>s.hasVerified).length;
 }
-function toggle(stop,type){
-  state.pick[stop]=state.pick[stop]||{letters:false,parcel:false};
-  state.pick[stop][type]=!state.pick[stop][type];
-  if(!state.pick[stop].letters&&!state.pick[stop].parcel)delete state.pick[stop];
+function ensurePick(stop){
+  state.pick[stop]=state.pick[stop]||{letters:false,parcels:0};
+  return state.pick[stop];
+}
+function toggleLetters(stop){
+  const p=ensurePick(stop);
+  p.letters=!p.letters;
+  if(!p.letters&&(p.parcels||0)===0)delete state.pick[stop];
+  save();renderDashboard();
+}
+function addParcel(stop){
+  const p=ensurePick(stop);
+  p.parcels=(p.parcels||0)+1;
+  save();renderDashboard();
+}
+function removeParcel(stop){
+  const p=ensurePick(stop);
+  p.parcels=Math.max(0,(p.parcels||0)-1);
+  if(!p.letters&&p.parcels===0)delete state.pick[stop];
   save();renderDashboard();
 }
 function renderDashboard(){
@@ -197,10 +218,14 @@ function renderDashboard(){
         <div class="gps">${s.hasVerified?"📍 GPS":"~ approx"}</div>
       </div>
       <div class="pick">
-        <button type="button" class="toggle letters ${p.letters?"on":""}" data-type="letters">✉ Letters</button>
-        <button type="button" class="toggle parcel ${p.parcel?"on":""}" data-type="parcel">📦 Parcel</button>
-      </div>`;
-    card.querySelectorAll(".toggle").forEach(b=>b.addEventListener("click",()=>toggle(s.stop,b.dataset.type)));
+        <button type="button" class="toggle letters ${p.letters?"on":""}" data-action="letters">✉ Letters</button>
+        <button type="button" class="toggle parcel ${(p.parcels||0)>0?"on":""}" data-action="parcel-add">📦 Parcel${(p.parcels||0)>0?" × "+p.parcels:""}</button>
+      </div>
+      ${(p.parcels||0)>0?'<button type="button" class="btn small-remove" data-action="parcel-remove">− Remove one parcel</button>':""}`;
+    card.querySelector('[data-action="letters"]').addEventListener("click",()=>toggleLetters(s.stop));
+    card.querySelector('[data-action="parcel-add"]').addEventListener("click",()=>addParcel(s.stop));
+    const rem=card.querySelector('[data-action="parcel-remove"]');
+    if(rem)rem.addEventListener("click",()=>removeParcel(s.stop));
     frag.appendChild(card);
   });
   list.appendChild(frag);
@@ -261,7 +286,7 @@ function renderRoute(){
   $("deliveryPostcode").textContent=s.postcode;
   let badges=[];
   if(p.letters)badges.push('<span class="badge letters">✉ Letters</span>');
-  if(p.parcel)badges.push('<span class="badge parcel">📦 Parcel</span>');
+  if((p.parcels||0)>0)badges.push('<span class="badge parcel">📦 Parcel × '+p.parcels+'</span>');
   if(state.delivered[s.stop])badges.push('<span class="badge">✓ Delivered</span>');
   if(!c.verified)badges.push('<span class="badge approx">Approx. coordinate</span>');
   $("deliveryBadges").innerHTML=badges.join("");
@@ -287,7 +312,7 @@ function renderRoute(){
     const px=state.pick[x.stop]||{};
     const r=document.createElement("div");
     r.className="route-row"+(state.delivered[x.stop]?" done":"");
-    r.innerHTML=`<div class="num">${idx+1}</div><div><div class="rname">${esc(x.name)}</div><div class="pc">Round ${x.stop} · ${esc(x.postcode)}</div></div><div>${px.letters?"✉":""}${px.parcel?" 📦":""}</div>`;
+    r.innerHTML=`<div class="num">${idx+1}</div><div><div class="rname">${esc(x.name)}</div><div class="pc">Round ${x.stop} · ${esc(x.postcode)}</div></div><div>${px.letters?"✉":""}${(px.parcels||0)>0?" 📦×"+px.parcels:""}</div>`;
     r.addEventListener("click",()=>{state.routeIndex=idx;save();renderRoute();window.scrollTo({top:0,behavior:"smooth"})});
     tl.appendChild(r);
   });

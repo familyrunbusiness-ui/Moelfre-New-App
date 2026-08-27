@@ -1,4 +1,4 @@
-const CACHE="moelfre-daily-round-v3-1";
+const CACHE="moelfre-daily-round-v3-2-parcelcount";
 const CORE=["./","./index.html","./manifest.webmanifest"];
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)))});
 self.addEventListener("activate",e=>e.waitUntil(
