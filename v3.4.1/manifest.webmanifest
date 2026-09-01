@@ -1,0 +1,9 @@
+{
+  "name": "Moelfre Daily Round Planner",
+  "short_name": "Daily Round",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "description": "Daily letters and parcel planner for the Moelfre round."
+}
