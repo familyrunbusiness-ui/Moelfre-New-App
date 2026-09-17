@@ -86,7 +86,9 @@ const current=()=>byId[state.order[currentIndex()]];
 function showMode(m){buildMode.classList.toggle('hide',m!=='build');dailyMode.classList.toggle('hide',m!=='daily');buildTab.classList.toggle('active',m==='build');dailyTab.classList.toggle('active',m==='daily');if(m==='daily')renderDailyList()}
 function renderBuild(){
  let s=current(),v=view(s),i=currentIndex(),g=state.gps[s.id];
- num.textContent=`Stop ${i+1} of ${state.order.length}`;name.textContent=v.name;addr.textContent=v.address;
+ document.getElementById('num').textContent=`Stop ${i+1} of ${state.order.length}`;
+ document.getElementById('name').textContent=v.name;
+ document.getElementById('addr').textContent=v.address;
  let changed=v.name!==s.name||v.address!==s.address;original.style.display=changed?'block':'none';original.textContent=changed?`Original sheet: ${s.name} — ${s.address}`:'';
  if(g){status.className='status saved';status.innerHTML=`✓ GPS saved<br>${(+g.lat).toFixed(6)}, ${(+g.lon).toFixed(6)}<br>Accuracy ±${Math.round(g.accuracy||0)}m • ${new Date(g.time).toLocaleTimeString()}`}
  else{status.className='status';status.textContent='No GPS saved yet'}

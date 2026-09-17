@@ -26,3 +26,9 @@ V3.1 UPDATE
 - The main GPS capture screen now clearly shows DESTINATION / COMPANY.
 - The address is displayed separately underneath.
 - GPS, editing, route reordering, Letters, Parcels, Collections and Heavy & Large are unchanged.
+
+V3.2 DISPLAY FIX
+- Fixed the main Build Round GPS card so the destination/company name is
+  populated directly beneath DESTINATION / COMPANY.
+- Example: Concrete Polishing Group Ltd appears above its Unit 8 address.
+- No changes to stored GPS, route order, edits, or daily delivery features.
