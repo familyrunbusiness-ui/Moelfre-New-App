@@ -1,0 +1,147 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12324a"><link rel="manifest" href="manifest.json">
+<title>New Round Builder + Daily Delivery</title><style>
+:root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#14202a;background:#eef3f6}
+*{box-sizing:border-box}body{margin:0}.top{position:sticky;top:0;z-index:5;background:#12324a;color:white;padding:14px 16px}
+.top h1{font-size:20px;margin:0 0 4px}.top small{opacity:.85}.wrap{max-width:760px;margin:auto;padding:14px}
+.panel,.card{background:white;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 9px #0001}
+.bar{height:9px;background:#dce5ea;border-radius:9px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:#2477b8}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tools.three{grid-template-columns:1fr 1fr 1fr}
+button,input,textarea{font:inherit}button{border:0;border-radius:12px;padding:13px 9px;font-weight:700;background:#dde7ed;color:#14202a}
+.primary{background:#1677c8;color:white}.gps{background:#087f5b;color:white;font-size:20px;padding:18px;width:100%}
+.warn{background:#fff0c7}.danger{background:#f3e2e2;color:#7d2020}.search{width:100%;padding:13px;border:1px solid #c7d2d9;border-radius:12px;background:white;margin-bottom:12px}
+.num{font-size:13px;color:#5b6973}.name{font-size:24px;font-weight:800;margin:5px 0 8px}.addr{font-size:18px;line-height:1.35;margin-bottom:10px}
+.original{font-size:12px;color:#65737d;background:#f4f7f8;border-radius:9px;padding:8px;margin-bottom:10px}
+.status{padding:10px;border-radius:10px;background:#eef3f6;margin:10px 0}.saved{background:#dff3e8;color:#145a3d}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.editgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.row{background:white;border-radius:12px;padding:10px;margin:7px 0;display:grid;grid-template-columns:38px 1fr auto;gap:8px;align-items:center}
+.row.done{border-left:5px solid #087f5b}.row .mini{display:flex;flex-direction:column;gap:4px}.mini button{padding:7px 9px;font-size:13px}
+small{line-height:1.25}.modal{position:fixed;inset:0;background:#0008;z-index:20;display:none;align-items:center;justify-content:center;padding:18px}
+.modal.show{display:flex}.modalbox{background:white;width:min(650px,100%);border-radius:18px;padding:18px}.modalbox input,.modalbox textarea{width:100%;padding:12px;border:1px solid #bdcbd3;border-radius:10px;margin:5px 0 12px}.modalbox textarea{min-height:90px}
+.note{font-size:12px;color:#65737d;margin-top:10px}
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+.tabs button.active{background:#12324a;color:white}
+.hide{display:none!important}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.actions button.on{background:#12324a;color:white}
+.routeRow{background:white;border-radius:12px;padding:11px;margin:7px 0}
+.badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.badge{font-size:12px;background:#e6edf1;border-radius:20px;padding:4px 8px}.badge.done{background:#dff3e8}
+.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.stat{background:#f4f7f8;border-radius:10px;padding:9px}.stat b{display:block;font-size:20px}
+</style></head><body>
+<header class="top"><h1>📮 New Round</h1><small>Build the round • GPS • Daily delivery</small></header>
+<main class="wrap">
+<div class="tabs"><button id="buildTab" class="active" onclick="showMode('build')">📍 Build Round</button><button id="dailyTab" onclick="showMode('daily')">📮 Today's Delivery</button></div>
+
+<section id="buildMode">
+<section class="panel"><b id="gpsCount"></b><div class="bar"><i id="bar"></i></div></section>
+<div class="tools three" style="margin-bottom:12px"><button onclick="backupJSON()">💾 Backup</button><button onclick="exportCSV()">⬇️ CSV</button><button onclick="resetOrder()">↺ Reset order</button></div>
+<input id="search" class="search" placeholder="Search business, unit, address or postcode…" oninput="renderBuildList()">
+<section class="card">
+<div class="num" id="num"></div>
+<div style="font-size:12px;color:#65737d;font-weight:800;margin-top:10px;letter-spacing:.04em">DESTINATION / COMPANY</div>
+<div class="name" id="companyDisplay"></div>
+<div style="font-size:12px;color:#65737d;font-weight:800;margin-top:10px;letter-spacing:.04em">ADDRESS</div>
+<div class="addr" id="addressDisplay"></div><div class="original" id="original"></div>
+<div id="status" class="status">No GPS saved yet</div>
+<button class="gps" onclick="saveGPS()">📍 SAVE GPS HERE</button>
+<div class="nav"><button onclick="step(-1)">← Previous</button><button class="primary" onclick="step(1)">Next →</button></div>
+<div class="editgrid"><button class="warn" onclick="openEdit()">✏️ Edit name / address</button><button onclick="moveCurrent(-1)">⬆️ Move earlier</button><button onclick="moveCurrent(1)">⬇️ Move later</button><button class="danger" onclick="clearCurrentGPS()">Clear GPS</button></div>
+<div class="note">GPS, renamed destinations and route order are permanent round data. Clearing today's work does not remove them.</div>
+</section><div id="buildList"></div>
+</section>
+
+<section id="dailyMode" class="hide">
+<section class="panel"><div class="summary" id="summary"></div></section>
+<div class="tools" style="margin-bottom:10px"><button class="primary" onclick="createRoute()">Create Today's Route</button><button class="danger" onclick="clearToday()">Clear Today</button></div>
+<input id="dailySearch" class="search" placeholder="Search today's address list…" oninput="renderDailyList()">
+<div id="dailyList"></div>
+<section id="routeBox" class="panel hide"><h2 style="margin-top:0">Today's Route</h2><div id="routeList"></div></section>
+</section>
+</main>
+
+<div id="modal" class="modal"><div class="modalbox"><h2 style="margin-top:0">Edit destination</h2>
+<label>Business / destination name</label><input id="editName"><label>Address / useful delivery text</label><textarea id="editAddr"></textarea>
+<div class="tools"><button onclick="closeEdit()">Cancel</button><button class="primary" onclick="saveEdit()">Save changes</button></div></div></div>
+
+<script>
+const ORIGINAL_STOPS=[{"id": "s1", "name": "Concrete Polishing Group Ltd", "address": "Unit 8, Maes Y Clawdd, SY10 8NU"}, {"id": "s2", "name": "Rescue & Repair Automotive Services Ltd", "address": "Unit 9, Maes Y Clawdd, SY10 8NU"}, {"id": "s3", "name": "Sprayaway", "address": "Unit 1, Maes Y Clawdd, SY10 8NU"}, {"id": "s4", "name": "Unit 2", "address": "Maes Y Clawdd, SY10 8NU"}, {"id": "s5", "name": "Border Refrigeration Spares", "address": "Unit 3, Maes Y Clawdd, SY10 8NU"}, {"id": "s6", "name": "Cool Running's Trailer Hire Ltd", "address": "Unit 3, Maes Y Clawdd, SY10 8NU"}, {"id": "s7", "name": "Culligan UK Ltd", "address": "Unit 4-5, Maes Y Clawdd, SY10 8NU"}, {"id": "s8", "name": "Rollings", "address": "Unit 6, Maes Y Clawdd, SY10 8NU"}, {"id": "s9", "name": "Shropshire Design & Print Solutions Ltd", "address": "Unit 7, Maes Y Clawdd, SY10 8NU"}, {"id": "s10", "name": "Arla Foods", "address": "Maesbury Road Industrial Estate, SY10 8NL"}, {"id": "s11", "name": "Pentons Cold Storage", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s12", "name": "M F S Systems Ltd", "address": "Unit 5, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s13", "name": "Pure Electrics", "address": "Unit 6, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s14", "name": "Unit 8", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s15", "name": "Discount Trade Supplies", "address": "Enterprise Unit 8, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s16", "name": "J Thomas Ltd", "address": "Enterprise Unit 9, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s17", "name": "Enterprise Unit 10", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s18", "name": "Mr Sparkle", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s19", "name": "Green Thumb", "address": "Enterprise Unit 12-13, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s20", "name": "Enterprise Unit 14", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s21", "name": "Enterprise Unit 15", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s22", "name": "Sign & Design (Shropshire) Ltd", "address": "Enterprise Unit 16, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s23", "name": "Dr Diesel", "address": "Enterprise Unit 17, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s24", "name": "Enterprise Unit 18", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s25", "name": "Maesbury Metals", "address": "Enterprise Unit 21-23, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s26", "name": "Enterprise Unit 20", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s27", "name": "Divine Materials Upholstery", "address": "Enterprise Unit 19, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s28", "name": "Higgins Accessible Transport Ltd", "address": "Enterprise Unit 28, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s29", "name": "Enterprise Unit 27", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s30", "name": "Enterprise Unit 26", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s31", "name": "Enterprise Unit 25", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s32", "name": "Enterprise Unit 24", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s33", "name": "Perform First Coaching Studio", "address": "Enterprise Unit 1, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s34", "name": "D A Griffiths", "address": "Enterprise Unit 2, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s35", "name": "Enterprise Unit 3", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s36", "name": "Enterprise Unit 4", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s37", "name": "Highline Electrical Ltd", "address": "Unit 9, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s38", "name": "National Windscreens", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s39", "name": "Morgans Plumbing & Heating", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s40", "name": "S A W McBride & Sons", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s41", "name": "Morris Transport", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s42", "name": "J F C Manufacturing (Europe) Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s43", "name": "J C Dyke Supplies", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s44", "name": "Morgans Of Oswestry", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s45", "name": "City Electrical Factors Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s46", "name": "Morgans Windows & Doors", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s47", "name": "Morgans Machinery Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s48", "name": "Burtons Roofing Supplies", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s49", "name": "Shropshire Galvanizers Ltd", "address": "Unit 12-13, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s50", "name": "Acota Ltd", "address": "Unit 14, Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s51", "name": "Aspect House", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s52", "name": "Hope House", "address": "Unit ME5, Mile End Business Park, SY10 8GB"}, {"id": "s53", "name": "Momentum Wines Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s54", "name": "Oswestry Electrical & Plumbing Factors", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s55", "name": "Evans Construction & Civil Engineering Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s56", "name": "The Log Co", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s57", "name": "Cold Move", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s58", "name": "Moran Transport", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s59", "name": "Jewson Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s60", "name": "Skyjack UK Ltd", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s61", "name": "Screwfix", "address": "Maesbury Road Industrial Estate, SY10 8NN"}, {"id": "s62", "name": "Ethels Car & Van", "address": "Maesbury Road Industrial Estate, SY10 8NN"}];
+const KEY='new-round-builder-daily-v3';
+let state;try{state=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+if(!state){
+ state={gps:{},currentId:ORIGINAL_STOPS[0].id,order:ORIGINAL_STOPS.map(x=>x.id),edits:{},today:{},delivered:{}};
+ try{
+   let old=JSON.parse(localStorage.getItem('new-round-gps-builder-v2')||'null');
+   if(old){state.gps=old.gps||{};state.order=old.order||state.order;state.edits=old.edits||{};state.currentId=old.currentId||state.currentId}
+ }catch(e){}
+}
+state.gps||={};state.edits||={};state.today||={};state.delivered||={};
+const byId=Object.fromEntries(ORIGINAL_STOPS.map(s=>[s.id,s]));
+const ordered=()=>state.order.map(id=>byId[id]).filter(Boolean);
+const view=s=>{let e=state.edits[s.id]||{};return {...s,name:e.name||s.name,address:e.address||s.address}};
+const persist=()=>{localStorage.setItem(KEY,JSON.stringify(state));updateSummary();updateGPS()};
+const currentIndex=()=>Math.max(0,state.order.indexOf(state.currentId));
+const current=()=>byId[state.order[currentIndex()]];
+function showMode(m){buildMode.classList.toggle('hide',m!=='build');dailyMode.classList.toggle('hide',m!=='daily');buildTab.classList.toggle('active',m==='build');dailyTab.classList.toggle('active',m==='daily');if(m==='daily')renderDailyList()}
+function renderBuild(){
+ let s=current(),v=view(s),i=currentIndex(),g=state.gps[s.id];
+ let companyEl=document.getElementById('companyDisplay');
+ let addressEl=document.getElementById('addressDisplay');
+ if(companyEl) companyEl.textContent=v.name || s.name || 'Unnamed destination';
+ if(addressEl) addressEl.textContent=v.address || s.address || '';
+ document.getElementById('num').textContent=`Stop ${i+1} of ${state.order.length}`;
+ let changed=v.name!==s.name||v.address!==s.address;original.style.display=changed?'block':'none';original.textContent=changed?`Original sheet: ${s.name} — ${s.address}`:'';
+ if(g){status.className='status saved';status.innerHTML=`✓ GPS saved<br>${(+g.lat).toFixed(6)}, ${(+g.lon).toFixed(6)}<br>Accuracy ±${Math.round(g.accuracy||0)}m • ${new Date(g.time).toLocaleTimeString()}`}
+ else{status.className='status';status.textContent='No GPS saved yet'}
+ persist();renderBuildList()
+}
+function step(d){let i=Math.max(0,Math.min(state.order.length-1,currentIndex()+d));state.currentId=state.order[i];renderBuild();scrollTo({top:0,behavior:'smooth'})}
+function saveGPS(){let s=current();status.textContent='Getting accurate GPS…';navigator.geolocation.getCurrentPosition(p=>{state.gps[s.id]={lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy,time:new Date().toISOString()};persist();renderBuild()},e=>{status.textContent='GPS failed: '+e.message},{enableHighAccuracy:true,timeout:20000,maximumAge:0})}
+function clearCurrentGPS(){let s=current();if(state.gps[s.id]&&confirm('Clear GPS for this destination?')){delete state.gps[s.id];persist();renderBuild()}}
+function moveCurrent(d){moveId(current().id,d)}
+function moveId(id,d){let i=state.order.indexOf(id),j=i+d;if(j<0||j>=state.order.length)return;[state.order[i],state.order[j]]=[state.order[j],state.order[i]];state.currentId=id;persist();renderBuild()}
+function resetOrder(){if(confirm('Reset original route order? GPS and renamed destinations will be kept.')){state.order=ORIGINAL_STOPS.map(x=>x.id);persist();renderBuild()}}
+function openEdit(){let v=view(current());editName.value=v.name;editAddr.value=v.address;modal.classList.add('show')}
+function closeEdit(){modal.classList.remove('show')}
+function saveEdit(){let s=current(),n=editName.value.trim(),a=editAddr.value.trim();if(!n)return alert('Please enter a destination name.');state.edits[s.id]={name:n,address:a};persist();closeEdit();renderBuild()}
+function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderBuildList(){
+ let q=search.value.toLowerCase(),box=buildList;box.innerHTML='';
+ ordered().forEach((s,i)=>{let v=view(s),hay=(v.name+' '+v.address+' '+s.name+' '+s.address).toLowerCase();if(q&&!hay.includes(q))return;
+ let r=document.createElement('div');r.className='row '+(state.gps[s.id]?'done':'');r.innerHTML=`<b>${i+1}</b><span><strong>${state.gps[s.id]?'✓ ':''}${esc(v.name)}</strong><br><small>${esc(v.address)}</small></span><div class="mini"><button onclick="moveId(${s.id},-1)">↑</button><button onclick="moveId(${s.id},1)">↓</button></div>`;
+ r.querySelector('span').onclick=()=>{state.currentId=s.id;renderBuild();scrollTo({top:0,behavior:'smooth'})};box.appendChild(r)})
+}
+function today(id){return state.today[id]||(state.today[id]={letters:false,parcels:0,collection:false,heavy:false})}
+function toggle(id,k){let t=today(id);t[k]=!t[k];persist();renderDailyList()}
+function parcel(id,d){let t=today(id);t.parcels=Math.max(0,(t.parcels||0)+d);persist();renderDailyList()}
+function selected(id){let t=today(id);return t.letters||t.parcels||t.collection||t.heavy}
+function renderDailyList(){
+ let q=dailySearch.value.toLowerCase();dailyList.innerHTML='';
+ ordered().forEach((s,i)=>{let v=view(s),t=today(s.id);if(q&&!(v.name+' '+v.address).toLowerCase().includes(q))return;
+ let r=document.createElement('div');r.className='routeRow';r.innerHTML=`<b>${i+1}. ${esc(v.name)}</b><br><small>${esc(v.address)}</small>
+ <div class="actions"><button class="${t.letters?'on':''}" onclick="toggle(${s.id},'letters')">✉️ Letters</button>
+ <button class="${t.parcels?'on':''}" onclick="parcel(${s.id},1)">📦 Parcel × ${t.parcels||0}</button>
+ <button class="${t.collection?'on':''}" onclick="toggle(${s.id},'collection')">↩️ Collection</button>
+ <button class="${t.heavy?'on':''}" onclick="toggle(${s.id},'heavy')">🏋️ Heavy & Large</button></div>
+ ${t.parcels?`<button style="margin-top:6px;padding:7px" onclick="parcel(${s.id},-1)">− Remove one parcel</button>`:''}`;dailyList.appendChild(r)});updateSummary()
+}
+function updateSummary(){
+ let ids=state.order.filter(selected),letters=0,parcels=0,col=0,heavy=0;ids.forEach(id=>{let t=today(id);letters+=t.letters?1:0;parcels+=t.parcels||0;col+=t.collection?1:0;heavy+=t.heavy?1:0});
+ if(document.getElementById('summary'))summary.innerHTML=`<div class="stat"><b>${ids.length}</b>Stops today</div><div class="stat"><b>${letters}</b>Letters</div><div class="stat"><b>${parcels}</b>Parcels</div><div class="stat"><b>${col}</b>Collections</div><div class="stat"><b>${heavy}</b>Heavy & Large</div><div class="stat"><b>${ids.filter(id=>state.delivered[id]).length}</b>Delivered</div>`
+}
+function createRoute(){
+ let ids=state.order.filter(selected);routeBox.classList.remove('hide');routeList.innerHTML=ids.length?'':'No items selected for today.';
+ ids.forEach((id,n)=>{let s=byId[id],v=view(s),t=today(id),g=state.gps[id],r=document.createElement('div');r.className='routeRow';
+ let badges=[t.letters?'✉️ Letters':'',t.parcels?`📦 ×${t.parcels}`:'',t.collection?'↩️ Collection':'',t.heavy?'🏋️ H&L':''].filter(Boolean).map(x=>`<span class="badge">${x}</span>`).join('');
+ r.innerHTML=`<b>${n+1}. ${esc(v.name)}</b><br><small>${esc(v.address)}</small><div class="badges">${badges} ${g?'<span class="badge">📍 GPS</span>':'<span class="badge">No GPS</span>'}</div><button style="margin-top:8px;width:100%" class="${state.delivered[id]?'primary':''}" onclick="markDelivered(${id})">${state.delivered[id]?'✓ Delivered':'Mark delivered'}</button>`;
+ routeList.appendChild(r)})
+}
+function markDelivered(id){state.delivered[id]=!state.delivered[id];persist();createRoute()}
+function clearToday(){if(confirm("Clear today's letters, parcels, collections, Heavy & Large and delivered marks? GPS, names and route order will NOT be changed.")){state.today={};state.delivered={};persist();renderDailyList();routeBox.classList.add('hide')}}
+function updateGPS(){let n=state.order.filter(id=>state.gps[id]).length;if(document.getElementById('gpsCount')){gpsCount.textContent=`${n} / ${state.order.length} GPS locations saved`;bar.style.width=(100*n/state.order.length)+'%'}}
+function dl(n,t,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type}));a.download=n;document.body.appendChild(a);a.click();a.remove()}
+function backupJSON(){let data={format:'new-round-builder-daily',version:3,exportedAt:new Date().toISOString(),state};dl('new-round-full-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(data,null,2),'application/json')}
+function exportCSV(){let e=v=>'"'+String(v??'').replaceAll('"','""')+'"',a=[['Route Position','Name','Address','Original Name','Original Address','Latitude','Longitude','Accuracy metres','GPS Updated At'].map(e).join(',')];ordered().forEach((s,i)=>{let v=view(s),g=state.gps[s.id]||{};a.push([i+1,v.name,v.address,s.name,s.address,g.lat,g.lon,g.accuracy,g.time].map(e).join(','))});dl('new-round-route-gps.csv',a.join('\n'),'text/csv')}
+renderBuild();updateSummary();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
